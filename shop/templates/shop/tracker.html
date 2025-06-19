@@ -1,0 +1,110 @@
+{% extends "shop/base.html" %}
+{% block title %}Checkout - E-commerce{% endblock title %}
+{% block style %}{% endblock %}
+{% block body %}
+<div class="container">
+  <div class="col my-3">
+    <h2>Step 1 - My E-commerce Cart Tracker - Enter your orderid and email address to Track your order</h2>
+    <form class="row g-3" method="POST" action="#" id="trackerform">
+      {% csrf_token %}
+      <input type="hidden" name="itemsJson" id="itemsJson" />
+      <div class="col-md-6">
+        <label for="inputname" class="form-label">Order Id</label>
+        <input type="text" class="form-control" id="orderid" name="orderid" placeholder="Order Id" />
+      </div>
+      <div class="col-md-6">
+        <label for="inputEmail4" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="Email" />
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Track Order</button>
+      </div>
+    </form>
+    </div>
+    <div class="col my-3">
+        <h2>Your Order Status</h2>
+        <div id="orderStatus"></div>
+        <div class="items" id="items">
+            Enter your Email and Order Id for your Order Details!
+        </div>
+
+        <h2>Your Order Details</h2>
+        <div id="orderdetail"></div>
+        <div class="citems" id="citems">
+        </div>
+    </div>
+    </div>
+</div>
+{% endblock body %}
+
+{% block js %}
+
+<script>
+  $(document).ready(function() {
+    $("#trackerform").submit(function(event) {
+      event.preventDefault();
+      $("#items").empty();  // Clear previous results
+      $("#citems").empty();  // Clear previous results
+      
+      var formData = {
+        'orderid': $("input[name='orderid']").val(),
+        'email': $("input[name='email']").val(),
+        'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
+      };
+
+      $.ajax({
+        type: "POST",
+        url: "/shop/tracker/",
+        data: formData,
+        dataType: 'json',
+        success: function(data) {  // Data is already parsed as JSON
+          if(data['Status'] == "Success") {
+            updates = data['Update'];
+            for (let i = 0; i < updates.length; i++) {
+              let text = updates[i]['text'];
+              let time = updates[i]['time'];  // Fixed variable name from cart to updates
+              
+              let mystr = `<li class="list-group-item d-flex justify-content-between align-items-start">
+                <div class="ms-2 me-auto">
+                  <div class="fw-bold">Update ${i+1}</div>
+                  ${text}
+                </div>
+                <span class="badge text-bg-primary rounded-pill">${time}</span>
+              </li>`;
+              
+              $("#items").append(mystr);
+            }
+                      var cart = JSON.parse(data['ItemsJson']);
+        console.log(cart.length);
+        for (item in cart) {
+            let name = cart[item][1];
+            let qty = cart[item][0];
+            mystr = `<li class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="ms-2 me-auto">
+            <div class="fw-bold">${name}</div>
+            Content for list item
+            </div>
+            <span class="badge text-bg-primary rounded-pill">${qty}</span>
+            </li>`;
+            $("#citems").append(mystr);
+        }
+          } else {
+            let mystr = `<li class="list-group-item">
+              <div class="alert alert-warning">
+                Sorry, We are not able to fetch your order Detail. Please type your correct orderid and email for your Order Detail.
+              </div>
+            </li>`;
+            $("#items").append(mystr);
+          }
+
+        },
+        error: function(xhr, status, error) {
+          console.log("Error Occurred");
+          console.error(xhr.responseText);
+          $("#items").html('<div class="alert alert-danger">Error tracking order. Please try again.</div>');
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
